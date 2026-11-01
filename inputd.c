@@ -32,7 +32,6 @@
  * Paths are auto-detected if omitted.
  */
 
-#define _GNU_SOURCE
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -43,10 +42,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <linux/vt.h>
 #include <sys/epoll.h>
 #include <sys/ioctl.h>
 #include <sys/reboot.h>
-#include <sys/timerfd.h>
 #include <time.h>
 #include <unistd.h>
 
