@@ -1,0 +1,13 @@
+#!/sbin/openrc-run
+
+description="ALOS input daemon — gamepad to uinput bridge"
+
+command="/usr/local/bin/inputd"
+command_background=true
+pidfile="/run/inputd.pid"
+command_args="${INPUTD_GAMEPAD_DEV:-} ${INPUTD_POWER_DEV:-}"
+
+depend() {
+    need udev udev-settle
+    before agetty.tty0
+}
