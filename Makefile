@@ -3,7 +3,7 @@
 # On-device:    apk add build-base && make
 
 CC     ?= cc
-CFLAGS ?= -O2 -Wall -Wextra -std=c11
+CFLAGS ?= -O2 -Wall -Wextra -std=c11 -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L
 TARGET  = inputd
 
 .PHONY: all clean install
