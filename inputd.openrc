@@ -5,9 +5,16 @@ description="ALOS input daemon — gamepad to uinput bridge"
 command="/usr/local/bin/inputd"
 command_background=true
 pidfile="/run/inputd.pid"
-command_args="${INPUTD_GAMEPAD_DEV:-} ${INPUTD_POWER_DEV:-}"
+
+# Optional overrides; the daemon auto-detects any device not specified.
+[ -r /etc/inputd.conf ] && . /etc/inputd.conf
+
+command_args=""
+[ -n "${INPUTD_GAMEPAD_DEV:-}" ] && command_args="$command_args --gamepad ${INPUTD_GAMEPAD_DEV}"
+[ -n "${INPUTD_POWER_DEV:-}" ] && command_args="$command_args --power ${INPUTD_POWER_DEV}"
 
 depend() {
-    need udev udev-settle
-    before agetty.tty0
+    need dev
+    after modules
+    before agetty
 }
