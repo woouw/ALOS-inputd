@@ -8,7 +8,7 @@ Reads raw evdev events from the gamepad and power button, emits keyboard and mou
 
 | Button | Action | Shifted (L-stick held) |
 |---|---|---|
-| D-pad | Arrow keys | Resize window (F23–F26 → sway binds) |
+| D-pad | Arrow keys | Resize window (F23/F24 and F11/F12 → sway binds) |
 | L1 | F17 (prev workspace) | F19 (move window to prev workspace) |
 | R1 | F18 (next workspace) | F20 (move window to next workspace) |
 | L2 | Tab | — |
@@ -55,8 +55,8 @@ bindsym F22 fullscreen toggle
 
 bindsym F23 resize shrink width  20px
 bindsym F24 resize grow   width  20px
-bindsym F25 resize shrink height 20px
-bindsym F26 resize grow   height 20px
+bindsym F11 resize shrink height 20px
+bindsym F12 resize grow   height 20px
 ```
 
 ## Build
