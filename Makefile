@@ -15,7 +15,7 @@ $(TARGET): inputd.c
 
 install: $(TARGET)
 	install -Dm755 $(TARGET) $(DESTDIR)/usr/local/bin/$(TARGET)
-	install -Dm644 inputd.openrc $(DESTDIR)/etc/init.d/inputd
+	install -Dm755 inputd.openrc $(DESTDIR)/etc/init.d/inputd
 	install -Dm644 inputd.conf   $(DESTDIR)/etc/inputd.conf
 
 clean:
