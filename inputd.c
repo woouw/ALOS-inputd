@@ -114,6 +114,7 @@ static const struct btn_map BUTTON_MAP[] = {
 /* State                                                                */
 /* ------------------------------------------------------------------ */
 
+static unsigned int pressed_key[KEY_MAX + 1]; /* emitted key per physical key; release invariant */
 static int shift_held   = 0;   /* L-stick click held */
 static int select_held  = 0;
 static int start_held   = 0;
@@ -352,17 +353,23 @@ static void handle_button(unsigned int code, int value)
     for (size_t i = 0; i < BUTTON_MAP_LEN; i++) {
         if (BUTTON_MAP[i].code != code) continue;
 
-        unsigned int key = shift_held ? BUTTON_MAP[i].shifted : BUTTON_MAP[i].normal;
-        if (key == 0) return; /* unbound */
-
-        /* Mouse buttons */
-        if (key == BTN_LEFT || key == BTN_RIGHT) {
-            ui_emit(EV_KEY, key, value);
-            ui_sync();
+        /* Pick mapping on key-down and remember it. Modifier changes while a
+         * key is held must never change the key released on key-up. */
+        if (code > KEY_MAX) return;
+        unsigned int key;
+        if (value == 1) {
+            key = shift_held ? BUTTON_MAP[i].shifted : BUTTON_MAP[i].normal;
+            pressed_key[code] = key;
+        } else if (value == 0) {
+            key = pressed_key[code];
+            pressed_key[code] = 0;
         } else {
-            ui_emit(EV_KEY, key, value);
-            ui_sync();
+            /* Ignore autorepeat for mapped keys; don't duplicate key-downs. */
+            return;
         }
+        if (key == 0) return;
+        ui_emit(EV_KEY, key, value);
+        ui_sync();
         return;
     }
 }
