@@ -455,8 +455,27 @@ static void on_signal(int s) { (void)s; running = 0; }
 
 int main(int argc, char *argv[])
 {
-    const char *gamepad_arg = argc > 1 ? argv[1] : NULL;
-    const char *power_arg   = argc > 2 ? argv[2] : NULL;
+    const char *gamepad_arg = NULL;
+    const char *power_arg = NULL;
+    /* Preserve legacy positional arguments while supporting unambiguous flags. */
+    if (argc > 1 && argv[1][0] != '-') {
+        gamepad_arg = argv[1];
+        if (argc > 2) power_arg = argv[2];
+    } else {
+        for (int i = 1; i < argc; i++) {
+            if (!strcmp(argv[i], "--gamepad") && i + 1 < argc)
+                gamepad_arg = argv[++i];
+            else if (!strcmp(argv[i], "--power") && i + 1 < argc)
+                power_arg = argv[++i];
+            else if (!strcmp(argv[i], "--help")) {
+                fprintf(stderr, "usage: inputd [gamepad-path] [power-path] [--gamepad path] [--power path]\n");
+                return 0;
+            } else {
+                fprintf(stderr, "inputd: unknown/incomplete argument: %s\n", argv[i]);
+                return 2;
+            }
+        }
+    }
 
     signal(SIGINT,  on_signal);
     signal(SIGTERM, on_signal);
