@@ -133,6 +133,8 @@ static int ufd = -1;
 
 /* epoll fd */
 static int epfd = -1;
+static struct input_absinfo abs_info[ABS_MAX + 1];
+static unsigned char abs_info_valid[ABS_MAX + 1];
 
 /* ------------------------------------------------------------------ */
 /* Backlight                                                            */
@@ -374,9 +376,24 @@ static void handle_button(unsigned int code, int value)
     }
 }
 
+static int normalize_axis(unsigned int code, int raw)
+{
+    if (code <= ABS_MAX && abs_info_valid[code]) {
+        int min = abs_info[code].minimum;
+        int max = abs_info[code].maximum;
+        if (max <= min) return 0;
+        long scaled = ((long)(raw - min) * 65534L) / (max - min) - 32767L;
+        if (scaled < -32767L) scaled = -32767L;
+        if (scaled >  32767L) scaled =  32767L;
+        return (int)scaled;
+    }
+    /* Fallback for devices without queryable axis metadata. */
+    return raw;
+}
+
 static void handle_axis(unsigned int code, int raw_value)
 {
-    int v = raw_value;
+    int v = normalize_axis(code, raw_value);
 
     switch (code) {
     /* L-stick → mouse cursor */
@@ -482,6 +499,12 @@ int main(int argc, char *argv[])
 
     int gpfd, pwfd;
     open_devices(&gpfd, &pwfd, gamepad_arg, power_arg);
+
+    /* Query real axis ranges instead of assuming every device uses 0..32767. */
+    for (unsigned int axis = 0; axis <= ABS_MAX; axis++) {
+        if (ioctl(gpfd, EVIOCGABS(axis), &abs_info[axis]) == 0)
+            abs_info_valid[axis] = 1;
+    }
 
     ufd  = uinput_create();
     epfd = epoll_create1(0);
