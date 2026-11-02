@@ -1,3 +1,6 @@
+#define _DEFAULT_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
 /*
  * inputd — ALOS input daemon for Anbernic RG35XX H
  *
@@ -102,8 +105,8 @@ static const struct btn_map BUTTON_MAP[] = {
     /* D-pad (hat switches converted to keys by kernel) */
     { KEY_LEFT,     KEY_LEFT,           KEY_F23       },  /* D-left / resize */
     { KEY_RIGHT,    KEY_RIGHT,          KEY_F24       },
-    { KEY_UP,       KEY_UP,             KEY_F25       },
-    { KEY_DOWN,     KEY_DOWN,           KEY_F26       },
+    { KEY_UP,       KEY_UP,             KEY_F11       },
+    { KEY_DOWN,     KEY_DOWN,           KEY_F12       },
 };
 #define BUTTON_MAP_LEN (sizeof(BUTTON_MAP) / sizeof(BUTTON_MAP[0]))
 
@@ -190,7 +193,6 @@ static void ui_emit(unsigned int type, unsigned int code, int value)
 }
 
 static void ui_sync(void)    { ui_emit(EV_SYN, SYN_REPORT, 0); }
-static void ui_key(unsigned int code, int val) { ui_emit(EV_KEY, code, val); ui_sync(); }
 static void ui_rel(unsigned int code, int val) { ui_emit(EV_REL, code, val); ui_sync(); }
 
 /* ------------------------------------------------------------------ */
@@ -222,7 +224,7 @@ static int uinput_create(void)
         KEY_NEXTSONG, KEY_PREVIOUSSONG,
         KEY_F13, KEY_F14, KEY_F15, KEY_F16,
         KEY_F17, KEY_F18, KEY_F19, KEY_F20,
-        KEY_F21, KEY_F22, KEY_F23, KEY_F24,
+        KEY_F11, KEY_F12, KEY_F21, KEY_F22, KEY_F23, KEY_F24,
         BTN_LEFT, BTN_RIGHT,
     };
     for (size_t i = 0; i < sizeof(keys)/sizeof(keys[0]); i++)
