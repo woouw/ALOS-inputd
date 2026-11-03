@@ -1,85 +1,96 @@
 # ALOS-inputd
 
-Input daemon for the Anbernic RG35XX H running Alpine Linux (ALOS).
+Input daemon for Anbernic RG handhelds running Alpine Linux.
 
-Reads raw evdev events from the gamepad and power button, emits keyboard and mouse events on a virtual uinput device. Apps see a normal keyboard/mouse — no gamepad awareness needed.
+Grabs the gamepad, volume and power evdev nodes and re-emits them as keyboard + mouse events on one virtual uinput device. Apps see a normal keyboard and mouse; nothing needs to know about the handheld's button layout.
 
 ## Button map
 
-| Button | Action | Shifted (L-stick held) |
-|---|---|---|
-| D-pad | Arrow keys | Resize window (F23–F26 → sway binds) |
-| L1 | F17 (prev workspace) | F19 (move window to prev workspace) |
-| R1 | F18 (next workspace) | F20 (move window to next workspace) |
-| L2 | Tab | — |
-| R2 | Enter | — |
-| A | Right click | — |
-| B | Left click | — |
-| X | F14 (floating keyboard) | F21 (kill window) |
-| Y | F15 (float toggle) | F22 (fullscreen) |
-| L-stick axis | Mouse cursor | — |
-| R-stick axis | Scroll (REL_WHEEL / REL_HWHEEL) | — |
-| L-stick click | Shift modifier | — |
-| R-stick click | XF86AudioMute | — |
-| Select | Escape | — |
-| Start | Super (mod key) | — |
-| Select + Start + L2 | Prev TTY (chvt) | — |
-| Select + Start + R2 | Next TTY (chvt) | — |
-| F (top) | F13 (spawn terminal) | F16 (wmenu) |
-| Vol up | XF86AudioRaiseVolume | XF86AudioNext |
-| Vol down | XF86AudioLowerVolume | XF86AudioPrev |
-| Power short press | Toggle low-power mode (blank display) | — |
-| Power long press (≥1.5s) | Graceful shutdown | — |
+"Shifted" means **L-stick click held**. A shifted button with no shifted action behaves as normal.
 
-## Sway config snippet
+| Button | Action | Shifted |
+|---|---|---|
+| D-pad | Arrow keys | Resize window (XF86Launch1–4) |
+| L1 / R1 | F17 / F18 (prev / next workspace) | F19 / F20 (move window to prev / next workspace) |
+| L2 | Tab | |
+| R2 | Enter | |
+| A | Right click | |
+| B | Left click | |
+| X | F14 (floating keyboard) | F21 (kill window) |
+| Y | F15 (floating toggle) | F22 (fullscreen) |
+| L-stick | Mouse cursor | |
+| R-stick | Scroll | |
+| L-stick click | Shift modifier | |
+| R-stick click | Mute | |
+| Select | Escape (tap) | |
+| Start | Super | |
+| Select + Start + L2 / R2 | Previous / next TTY | |
+| F (top) | F13 (terminal) | F16 (launcher) |
+| Vol up / down | Volume up / down | Next / previous track |
+| Power, short press | Toggle low-power (display off) | |
+| Power, hold 1.5 s | Graceful `poweroff` | |
+
+## Sway config
 
 ```
 set $mod Mod4
 
 bindsym F13 exec foot
-bindsym $mod+F13 exec wmenu-run
-
+bindsym F16 exec wmenu-run
 bindsym F14 exec wvkbd-mobintl
-bindsym $mod+F14 exec wvkbd-mobintl
-
 bindsym F15 floating toggle
-bindsym $mod+F15 fullscreen toggle
+bindsym F22 fullscreen toggle
+bindsym F21 kill
 
 bindsym F17 workspace prev
 bindsym F18 workspace next
 bindsym F19 move container to workspace prev
 bindsym F20 move container to workspace next
 
-bindsym F21 kill
-bindsym F22 fullscreen toggle
-
-bindsym F23 resize shrink width  20px
-bindsym F24 resize grow   width  20px
-bindsym F25 resize shrink height 20px
-bindsym F26 resize grow   height 20px
+bindsym XF86Launch1 resize shrink width  20px
+bindsym XF86Launch2 resize grow   width  20px
+bindsym XF86Launch3 resize shrink height 20px
+bindsym XF86Launch4 resize grow   height 20px
 ```
 
 ## Build
 
 On the device:
 ```sh
-apk add build-base
-make
-make install
-rc-update add inputd sysinit
+apk add build-base linux-headers
+make && make install
+rc-update add inputd default
+rc-service inputd start
 ```
 
-Cross-compile (on Alpine x86_64 host):
+Cross-compile:
 ```sh
-apk add aarch64-linux-musl-cross
 make CC=aarch64-linux-musl-gcc CFLAGS="-O2 -Wall -std=c11 -static"
 ```
 
+## Fixing a wrong button
+
+Nothing about the device layout is hard-coded beyond sensible defaults. If a button does the wrong thing, find out what it really sends:
+
+```sh
+doas rc-service inputd stop
+doas inputd -d
+```
+
+Press the button; the log shows `type`, `code` and `value`. Then remap it in `/etc/inputd.conf`:
+
+```
+button 305 A
+```
+
+See `inputd.conf` for the logical names.
+
 ## How it works
 
-- Discovers gamepad (has `BTN_SOUTH` + `ABS_X`) and power button (`KEY_POWER`) from `/dev/input/event*` automatically, or accepts paths as arguments.
-- Creates a virtual uinput device exporting key + relative axis events.
-- Uses `epoll` to watch both devices simultaneously.
-- L-stick click sets a `shift_held` flag; all other buttons check it for their alternate keycode.
-- Power button: records `CLOCK_MONOTONIC` timestamp on key-down; on key-up, if ≥1500ms calls `reboot(RB_POWER_OFF)`, else toggles `/sys/class/backlight/*/bl_power`.
-- TTY switching uses `VT_ACTIVATE` ioctl on `/dev/tty0` directly — no shell-out.
+- Opens every `/dev/input/event*` that looks like a gamepad (`BTN_SOUTH`/`BTN_EAST`) or has volume/power keys, skipping real keyboards and its own virtual device, and grabs them (`EVIOCGRAB`) so apps don't also see the raw events.
+- Analog ranges come from the kernel (`EVIOCGABS`) and are normalised, so any stick range works.
+- D-pad is accepted as `ABS_HAT0X/Y`, `BTN_DPAD_*` or `KEY_UP/DOWN/LEFT/RIGHT`.
+- A 16 ms timer turns stick deflection into continuous mouse motion (with deadzone and acceleration) and scroll.
+- The key emitted on press is remembered per button, so releasing after the shift state changed never leaves a stuck key.
+- TTY switching uses `VT_ACTIVATE` directly.
+- Power: short press toggles the backlight (`bl_power`, falling back to `brightness`); a 1.5 s hold runs `poweroff` while the button is still down.
