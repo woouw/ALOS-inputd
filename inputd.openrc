@@ -8,8 +8,8 @@ command="/usr/local/bin/inputd"
 command_args="${INPUTD_ARGS:-}"
 command_background=true
 pidfile="/run/inputd.pid"
-output_log="/var/log/inputd.log"
-error_log="/var/log/inputd.log"
+output_log="/run/inputd.log"
+error_log="/run/inputd.log"
 
 # Soft dependencies only: nonexistent services are ignored.
 depend() {
