@@ -85,6 +85,16 @@ button 305 A
 
 See `inputd.conf` for the logical names.
 
+## Pinning devices
+
+Auto-detection is normally enough. To force specific nodes, put arguments in `/etc/conf.d/inputd`:
+
+```sh
+INPUTD_ARGS="--gamepad /dev/input/event3 --power /dev/input/event0"
+```
+
+When any path is given, only those nodes are used.
+
 ## How it works
 
 - Opens every `/dev/input/event*` that looks like a gamepad (`BTN_SOUTH`/`BTN_EAST`) or has volume/power keys, skipping real keyboards and its own virtual device, and grabs them (`EVIOCGRAB`) so apps don't also see the raw events.

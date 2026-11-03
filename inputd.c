@@ -10,7 +10,9 @@
  *   - the D-pad works whether it is ABS_HAT0X/Y, BTN_DPAD_* or KEY_UP/...
  *   - any evdev code can be remapped in /etc/inputd.conf
  *
- * Usage:  inputd [-d] [-c /etc/inputd.conf]
+ * Usage:  inputd [-d] [-c /etc/inputd.conf] [--gamepad PATH] [--power PATH]
+ *   --gamepad/--power/--device PATH
+ *        use exactly these event nodes instead of auto-detecting (repeatable).
  *   -d   debug: log every raw event (name, code, value) to stderr.
  *        Use it to find the code a button really sends, then remap it.
  *
@@ -434,6 +436,18 @@ static void load_conf(const char *path)
 static struct { int fd; char name[64]; } devs[MAX_DEV];
 static int ndev;
 
+/* Explicit device paths (--gamepad/--power/--device). When any are given,
+ * only those nodes are used and auto-detection filters are bypassed. */
+static const char *explicit_path[MAX_DEV];
+static int nexplicit;
+
+static int is_listed(const char *path)
+{
+    for (int i = 0; i < nexplicit; i++)
+        if (strcmp(explicit_path[i], path) == 0) return 1;
+    return 0;
+}
+
 static void load_abs(int fd)
 {
     unsigned long bits[ABS_CNT / (8 * sizeof(long)) + 1];
@@ -478,9 +492,11 @@ static void scan_devices(int ep)
         int is_key = test_bit(keys, KEY_VOLUMEUP) || test_bit(keys, KEY_VOLUMEDOWN) ||
                      test_bit(keys, KEY_POWER);
 
-        if (ours || is_kbd || !(is_pad || is_key)) { close(fd); continue; }
+        int want = nexplicit ? is_listed(path)
+                             : !(ours || is_kbd || !(is_pad || is_key));
+        if (ours || !want) { close(fd); continue; }
 
-        if (is_pad) load_abs(fd);
+        if (is_pad || nexplicit) load_abs(fd);
         if (ioctl(fd, EVIOCGRAB, 1) < 0)
             fprintf(stderr, "inputd: could not grab %s (%s)\n", path, name);
 
@@ -555,7 +571,11 @@ int main(int argc, char **argv)
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-d") == 0) opt_debug = 1;
         else if (strcmp(argv[i], "-c") == 0 && i + 1 < argc) conf = argv[++i];
-        else { fprintf(stderr, "usage: %s [-d] [-c conf]\n", argv[0]); return 2; }
+        else if ((strcmp(argv[i], "--gamepad") == 0 || strcmp(argv[i], "--power") == 0 ||
+                  strcmp(argv[i], "--device") == 0) && i + 1 < argc) {
+            if (nexplicit < MAX_DEV) explicit_path[nexplicit++] = argv[++i];
+        }
+        else { fprintf(stderr, "usage: %s [-d] [-c conf] [--gamepad PATH] [--power PATH] [--device PATH]\n", argv[0]); return 2; }
     }
 
     init_default_codes();

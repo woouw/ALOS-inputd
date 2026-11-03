@@ -3,23 +3,25 @@
 description="ALOS input daemon — gamepad/volume/power to uinput bridge"
 
 command="/usr/local/bin/inputd"
+# Extra daemon arguments go in /etc/conf.d/inputd, e.g.:
+#   INPUTD_ARGS="--gamepad /dev/input/event3 --power /dev/input/event0"
 command_args="${INPUTD_ARGS:-}"
 command_background=true
 pidfile="/run/inputd.pid"
 output_log="/var/log/inputd.log"
 error_log="/var/log/inputd.log"
 
+# Soft dependencies only: nonexistent services are ignored.
 depend() {
-    need udev
-    after udev-settle modules
-    before agetty.tty0
+    after modules localmount udev-settle
+    before agetty agetty.tty0
 }
 
 start_pre() {
     modprobe uinput 2>/dev/null || true
     # wait briefly for /dev/uinput to appear
     for _ in 1 2 3 4 5 6 7 8 9 10; do
-        [ -e /dev/uinput ] || [ -e /dev/input/uinput ] && return 0
+        if [ -e /dev/uinput ] || [ -e /dev/input/uinput ]; then return 0; fi
         sleep 0.2
     done
     eerror "/dev/uinput not available (kernel lacks uinput?)"
