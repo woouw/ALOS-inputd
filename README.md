@@ -1,6 +1,6 @@
 # argonine-inputd
 
-Input daemon for [Argonine](https://github.com/woouw/All-Linux-OS-rg35xxh), a handheld framework for computing.
+Input daemon for [Argonine](https://github.com/woouw/argonine-make), a handheld framework for computing.
 
 Grabs the gamepad, volume and power evdev nodes and re-emits them as keyboard + mouse events on one virtual uinput device. Apps see a normal keyboard and mouse; nothing needs to know about the handheld's button layout.
 
