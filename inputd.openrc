@@ -1,6 +1,6 @@
 #!/sbin/openrc-run
 
-description="ALOS input daemon — gamepad/volume/power to uinput bridge"
+description="Argonine input daemon — gamepad/volume/power to uinput bridge"
 
 command="/usr/local/bin/inputd"
 # Extra daemon arguments go in /etc/conf.d/inputd, e.g.:

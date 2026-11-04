@@ -1,5 +1,5 @@
 /*
- * inputd — ALOS input daemon for Anbernic RG handhelds
+ * inputd — Argonine input daemon for Anbernic RG handhelds
  *
  * Grabs the handheld's gamepad / volume / power evdev nodes and re-emits
  * their events as keyboard + mouse events on one virtual uinput device.
@@ -50,7 +50,7 @@
 #define MOUSE_SPEED        12.0f   /* px per tick at full deflection */
 #define SCROLL_SPEED       0.12f   /* notches per tick at full deflection */
 #define MAX_VT             12
-#define VNAME              "ALOS inputd virtual device"
+#define VNAME              "Argonine inputd virtual device"
 
 /* ------------------------------------------------------------------ */
 /* Logical buttons                                                      */

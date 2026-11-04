@@ -1,4 +1,4 @@
-# ALOS-inputd
+# argonine-inputd
 # Cross-compile: make CC=aarch64-linux-musl-gcc CFLAGS="-O2 -Wall -std=c11 -static"
 # On-device:     apk add build-base linux-headers && make && make install
 

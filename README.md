@@ -1,6 +1,6 @@
-# ALOS-inputd
+# argonine-inputd
 
-Input daemon for Anbernic RG handhelds running Alpine Linux.
+Input daemon for [Argonine](https://github.com/woouw/All-Linux-OS-rg35xxh) — Alpine Linux for Anbernic RG handhelds.
 
 Grabs the gamepad, volume and power evdev nodes and re-emits them as keyboard + mouse events on one virtual uinput device. Apps see a normal keyboard and mouse; nothing needs to know about the handheld's button layout.
 
